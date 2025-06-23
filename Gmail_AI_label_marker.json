@@ -1,12 +1,12 @@
 {
-  "name": "Gmail Trigger",
+  "name": "Gmail Trigger V1",
   "nodes": [
     {
       "parameters": {
         "promptType": "define",
         "text": "=Předmet: {{ $json.Subject }} Body: {{ $json.snippet }} From: {{ $json.From }} Labels: {{ $json.labels }}",
         "options": {
-          "systemMessage": "\n---- Sekce pro tvojí roli ----\nJsi inteligentní emailový agent, jehož funkcí je rozeznat povahu, typ příchozího emailu a označit ho štítkem podle tvého rozhodnutí.\n\n---- Sekce pro použití paměti ----\nMáš k dispozici paměť, kde máš předchozí emaily. Najdeš tam historii posledních příchozích emailů\n\n---- Sekce pro použití vyhledávání v emailové schránce ----\nMáš k dispozici nástroj na vyhledávání v emailové schránce, můžeš si podle textového řetezce vyhledávat ve schránce. Jako textový řetezec můžeš použít můžeš použít emailovou adresu odesilatele, předmět, část těla zpravy, aby sis dohledal minulou konverzaci. Můžeš si vyhledat historii podle emailové adresy odesilatele nebo emailové adresy v kopii a podle těla zprávy zjistit, zda jde o pracovní email, reklamu, osobní email. Taky se můžeš kouknout na štítek, kterým jsou označené předchozí zprávy. Koukej na i na konverzace podle emailu a subjektu, zda nový příchozí email navazuje na předchozí konverzaci\n\n---- Sekce pro rozpoznání typu emailu----\nTaky chci vědět, zda jde o nějaký informativní email, reklamu, osobní email, email od rodiny. Tyto poznatky si ukládej do paměti a aktivně používej.\nTaké upozorni, zda jde o přeposlaný email nebo mail navazující na předchozí konverzaci\n\n---- Sekce pro definici emailu ----\nTvým výstupem je tedy krátky sumář o jaký typ emailu a zda se jedná o informativní, urgentní, spam nebo jiný typ emailu. Toto ve výstupu v krátkosti popiš i čeho se to týká. Maximálně jednou větou větami.\n\n---- Sekce pro definici načítání štítku ----\nMáš také k dispozici nástroj na načtení všech štítku. Pokaždé si načti štítky a rozhodni, jestli se některý štítek hodí na označení emailu.\n\n---- Sekce pro označování emailu štítkem ----\nMáš také k dispozici nástroj na označení emailu štítkem. Pokaždé, tedy vždy použij tento nástroj na označování emailu štítkem, označ tento email nejbližším štítkem. Můžeš použít i dva a více štítků, maximálně čtyři. Štítek posílej nástroji jako ID štítku"
+          "systemMessage": "\n---- Sekce pro tvojí roli ----\nJsi inteligentní emailový agent, jehož funkcí je rozeznat povahu, typ příchozího emailu a označit ho štítkem podle tvého rozhodnutí.\n\n---- Sekce pro použití paměti ----\nMáš k dispozici paměť, kde máš předchozí emaily. Najdeš tam historii posledních příchozích emailů\n\n---- Sekce pro použití vyhledávání v emailové schránce ----\nMáš k dispozici nástroj na vyhledávání v emailové schránce, můžeš si podle textového řetezce vyhledávat ve schránce. Jako textový řetezec můžeš použít můžeš použít emailovou adresu odesilatele, předmět, část těla zpravy, aby sis dohledal minulou konverzaci. Můžeš si vyhledat historii podle emailové adresy odesilatele nebo emailové adresy v kopii a podle těla zprávy zjistit, zda jde o pracovní email, reklamu, osobní email. Taky se můžeš kouknout na štítek, kterým jsou označené předchozí zprávy. Koukej na i na konverzace podle emailu a subjektu, zda nový příchozí email navazuje na předchozí konverzaci\n\n---- Sekce pro rozpoznání typu emailu----\nTaky chci vědět, zda jde o nějaký informativní email, reklamu, osobní email, email od rodiny. Tyto poznatky si ukládej do paměti a aktivně používej.\nTaké upozorni, zda jde o přeposlaný email nebo mail navazující na předchozí konverzaci\n\n---- Sekce pro definici emailu ----\nTvým výstupem je tedy krátky sumář o jaký typ emailu a zda se jedná o informativní, urgentní, spam nebo jiný typ emailu. Toto ve výstupu v krátkosti popiš i čeho se to týká. Maximálně jednou větou větami.\n\n---- Sekce pro definici načítání štítku ----\nMáš také k dispozici nástroj na načtení všech štítku. Pokaždé si načti štítky a rozhodni, jestli se některý štítek hodí na označení emailu.\n\n---- Sekce pro označování emailu štítkem ----\nMáš také k dispozici nástroj na označení emailu štítkem. Pokaždé, tedy vždy použij tento nástroj na označování emailu štítkem, označ tento email nejbližším štítkem. Použij dva a více štítků, maximálně čtyři. Štítek posílej nástroji jako ID štítku\n\n---- Moje specifická sekce ----\nPokud se email týká umělé inteligence, tak použij štítek \"ai\""
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
@@ -104,13 +104,13 @@
     },
     {
       "parameters": {
-        "content": "## Poznámky k Workflow \n\nTento AI Agent vezme nový příchozí email a podívá se do historie emailů, konverzace a podle toho se rozchodne, jak oštítkuje email. Vytvoří krátkou sumarizaci a pošle ho na nějaký messanger.\n\n**1/ OpenAI Chat Model**\nlze zvolit jakýkoliv trochu přemýšlecí\n\n**2/ Postgres Chat Memory**\nlze lze nahradit jakokoliv pamětí, pokud nebude perzistentní, automatizace si nebude pamatovat předchozí štítky z emailů\n\n**3/ IMAP - last email**\nnajde si posledních X zpráv podle emailové adresy a rozhoduje se o jakou konverzaci jde, např. pokud se třeba vedla emailová diskuze.\nJe implementováno pomocí IMAPU, Gmail konektor neumožňuje hledání\n\n**4/ Gmail - getAll: label**\nnačte si všechny štítky\n\n**5/ Gmail - addLabels: message**\ntímto nástrojem označí zprávu štítkem\n\n**6/ No Operation, do nothing**\nzde si můžete dát messenger na upozornění nových emailů\n\n\n",
-        "height": 640,
-        "width": 440
+        "content": "## Poznámky k Workflow - \n\nTento AI Agent vezme nový příchozí email a podívá se do historie emailů, do konverzace, prohledá historii INBOXu a podle toho se rozchodne, jak oštítkuje email. Vytvoří i krátkou sumarizaci, kterou lze poté poslat na jakýkoliv messanger.\n\n- reviduj prompt v System message v AI Agentovi\n- IMAP - last emails můžeš odstranit, odstraň pokun v promptu v AI Agentovi\n\n**1/ OpenAI Chat Model**\nlze zvolit jakýkoliv trochu přemýšlecí\n\n**2/ Postgres Chat Memory**\nlze nahradit jakokoliv pamětí, pokud nebude perzistentní, automatizace si nebude pamatovat předchozí štítky z emailů\n\n**3/ IMAP - last email**\nnajde si posledních X zpráv podle emailové adresy a rozhoduje se o jakou konverzaci jde, např. pokud se třeba vedla emailová diskuze.\nJe implementováno pomocí IMAPU, Gmail konektor neumožňuje hledání\n\n**4/ Gmail - getAll: label**\nnačte si všechny štítky\n\n**5/ Gmail - addLabels: message**\ntímto nástrojem označí zprávu štítkem\n\n**6/ No Operation, do nothing**\nzde si můžete dát messenger na upozornění nových emailů\n\n\n",
+        "height": 600,
+        "width": 600
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        -1400,
+        -1560,
         -280
       ],
       "typeVersion": 1,
@@ -271,7 +271,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "9ef57a56-17f3-40fd-a775-b44110c3bec3",
+  "versionId": "51e9cf16-f04a-4f0a-8f67-3fe0f097337e",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "c433ec160f53a60d614e7ab508b8aadc285e580f2d7d4ab2ff72f9a5ca27e294"
