@@ -1,0 +1,539 @@
+{
+  "workflow": {
+    "meta": {
+      "name": "Gmail Trigger V6 - s komentáři",
+      "description": "Automatická AI klasifikace Gmail emailů pomocí Mistral AI modelu. Workflow analyzuje příchozí emaily a přiřazuje jim odpovídající labely podle 8 kategorií.",
+      "version": "6.0",
+      "author": "Petr Prenghy",
+      "created": "2025-06-27T11:17:59.373Z",
+      "tags": ["gmail", "ai", "automation", "classification", "email"],
+      "features": [
+        "Automatické spouštění každou minutu",
+        "AI klasifikace do 8 kategorií",
+        "Použití Mistral AI modelu",
+        "Zpracování souvisejících emailů",
+        "Aplikace labelů na Gmail",
+        "Podrobné komentáře k jednotlivým nodům"
+      ],
+      "requirements": [
+        "Gmail OAuth2 credentials",
+        "OpenRouter API key",
+        "n8n instance with LangChain nodes"
+      ],
+      "categories": [
+        "1. To respond - Osobní odpovědi",
+        "2. FYI - Akce/upozornění",
+        "3. Comment - Žádosti o feedback",
+        "4. Notification - Automatické notifikace",
+        "5. Meeting update - Kalendářní události",
+        "6. Awaiting reply - Čeká na odpověď",
+        "7. Actioned - Potvrzení akcí",
+        "8. Marketing - Propagační obsah"
+      ]
+    },
+    "data": {
+      "createdAt": "2025-06-27T11:17:59.373Z",
+      "updatedAt": "2025-06-27T11:17:59.373Z",
+      "id": "kesAcXeRp2S9S7K9",
+      "name": "Gmail Trigger V6 - s komentáři",
+      "active": false,
+      "isArchived": false,
+      "nodes": [
+        {
+          "id": "d6cad946-4038-444c-9676-e385958417b9",
+          "name": "OpenRouter Chat Model",
+          "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+          "position": [900, 320],
+          "parameters": {
+            "model": "mistralai/mistral-small-3.2-24b-instruct:free",
+            "options": {}
+          },
+          "credentials": {
+            "openRouterApi": {
+              "id": "Szmeuw2dakq2xpr7",
+              "name": "OpenRouter mistralai/mistral-small-3.2-24b-instruct:free"
+            }
+          },
+          "typeVersion": 1
+        },
+        {
+          "id": "aab6bc51-a40c-435d-af5f-36c4e3ea4141",
+          "name": "Aggregate Gmail Messages",
+          "type": "n8n-nodes-base.aggregate",
+          "position": [-320, 0],
+          "parameters": {
+            "aggregate": "aggregateAllItemData",
+            "options": {}
+          },
+          "typeVersion": 1
+        },
+        {
+          "id": "10758bfd-9192-4bb0-bea6-e18dbe50b82c",
+          "name": "Merge Labels & Messages",
+          "type": "n8n-nodes-base.merge",
+          "position": [600, 100],
+          "parameters": {
+            "mode": "combine",
+            "combineBy": "combineAll",
+            "options": {}
+          },
+          "typeVersion": 3.1
+        },
+        {
+          "id": "b42574c6-5b12-46e9-ae74-90af5cf2c777",
+          "name": "Classify Email with AI",
+          "type": "@n8n/n8n-nodes-langchain.chainLlm",
+          "position": [880, 100],
+          "parameters": {
+            "promptType": "define",
+            "text": "=You are an email classification assistant. Your task is to analyze Gmail email snippets and categorize them into one of the following labels:\n\n1. To respond - Emails requiring a direct personal response from you (questions from individuals, personal conversations, NOT automated feedback requests)\n2. FYI - Emails requesting you to take action, reminders, or alerts about issues (add money requests, payment failures, action needed)\n3. Comment - Emails specifically asking for your feedback, review, or opinion in a professional/collaborative context\n4. Notification - Automated updates about completed or ongoing events (successful payments, transfers sent, deployments, shipments, security alerts)\n5. Meeting update - Calendar invites, meeting changes, or meeting-related communications\n6. Awaiting reply - Follow-up emails or reminders about your pending responses\n7. Actioned - Confirmations of actions YOU specifically took (not automated system actions)\n8. Marketing - Promotional content, sales emails, feature announcements, newsletters, or automated customer feedback surveys\n\nKey classification rules:\n- Automated status updates (deployments, transfers, payments processed) → Notification\n- Requests to add money or take action → FYI\n- Payment failure alerts → FYI\n- Security alert digests → Notification\n- Shipment updates → Notification\n- Direct Debit payment confirmations → Notification\n- Balance update confirmations → Notification\n- Customer satisfaction surveys or feedback requests → Marketing\n- Automated \"how was your experience\" emails → Marketing\n- Only use \"Actioned\" for confirmations of YOUR manual actions\n- Only use \"Marketing\" for promotional content, including feedback surveys\n\nInstructions:\n1. Read the email snippet carefully\n2. Note the sender (if provided) for context\n3. Choose the single most appropriate label based on the rules above\n4. IMPORTANT: Respond ONLY with the number and label (e.g., \"2. FYI\")\n5. Do not include any other text, explanation, or repeat the email content\n\nEmail From:\n{{ $json.From }}\nEmail To:\n{{ $json.To }}\nEmail subject:\n{{ $json.Subject }}\nEmail snippet:\n{{ $json.snippet }}\n\nYour response must be exactly one of these 8 options:\n1. To respond\n2. FYI\n3. Comment\n4. Notification\n5. Meeting update\n6. Awaiting reply\n7. Actioned\n8. Marketing",
+            "batching": {}
+          },
+          "typeVersion": 1.7
+        },
+        {
+          "id": "c9ab7289-d6c9-466e-85ac-9bf7ade651e1",
+          "name": "New Gmail Email Received",
+          "type": "n8n-nodes-base.gmailTrigger",
+          "position": [-600, 120],
+          "parameters": {
+            "pollTimes": {
+              "item": [{"mode": "everyMinute"}]
+            },
+            "filters": {}
+          },
+          "credentials": {
+            "gmailOAuth2": {
+              "id": "Efx3JS7iiWyrLbJd",
+              "name": "Gmail account"
+            }
+          },
+          "typeVersion": 1.2
+        },
+        {
+          "id": "7236f236-c55b-4645-9ad6-8b267b902ce5",
+          "name": "Fetch Available Gmail Labels",
+          "type": "n8n-nodes-base.gmail",
+          "position": [-120, 0],
+          "webhookId": "8574ca24-b439-4bc3-aa28-ae2b539a8d8e",
+          "parameters": {
+            "resource": "label",
+            "returnAll": true
+          },
+          "credentials": {
+            "gmailOAuth2": {
+              "id": "Efx3JS7iiWyrLbJd",
+              "name": "Gmail account"
+            }
+          },
+          "typeVersion": 2.1
+        },
+        {
+          "id": "db70b609-1daa-4e5b-9801-df202b992c38",
+          "name": "Map Label Names to IDs",
+          "type": "n8n-nodes-base.code",
+          "position": [80, 0],
+          "parameters": {
+            "jsCode": "const items = $input.all();\nconst combinedObject = items.reduce((acc, item) => {\n  return { ...acc, [item.json.name]: item.json.id };\n}, {});\n\nreturn { combinedObject };\n"
+          },
+          "typeVersion": 2
+        },
+        {
+          "id": "be5bbad0-0ce4-49db-ad68-773da8f654df",
+          "name": "Apply Classification Label",
+          "type": "n8n-nodes-base.gmail",
+          "position": [1320, 100],
+          "webhookId": "2ffe45e7-a0e3-4304-a6bf-e217c15ea6cc",
+          "parameters": {
+            "operation": "addLabels",
+            "messageId": "={{ $('Merge Labels & Messages').item.json.id }}",
+            "labelIds": "={{ $('Map Label Names to IDs').item.json.combinedObject[$json.text] }}"
+          },
+          "credentials": {
+            "gmailOAuth2": {
+              "id": "Efx3JS7iiWyrLbJd",
+              "name": "Gmail account"
+            }
+          },
+          "typeVersion": 2.1
+        },
+        {
+          "id": "ab4921f0-24c5-4690-92e4-9074112eac27",
+          "name": "Apply Classification Label1",
+          "type": "n8n-nodes-base.gmail",
+          "position": [2620, 100],
+          "webhookId": "2ffe45e7-a0e3-4304-a6bf-e217c15ea6cc",
+          "parameters": {
+            "operation": "addLabels",
+            "messageId": "={{ $json.messageId }}",
+            "labelIds": "={{ $json.labelIds }}"
+          },
+          "credentials": {
+            "gmailOAuth2": {
+              "id": "Efx3JS7iiWyrLbJd",
+              "name": "Gmail account"
+            }
+          },
+          "typeVersion": 2.1
+        },
+        {
+          "id": "ad2aba98-cf6f-4eef-9d9b-0eddbccf62c0",
+          "name": "Gmail - search",
+          "type": "n8n-nodes-base.gmail",
+          "position": [1660, 100],
+          "webhookId": "47a2a075-241e-4218-9a88-5a39195e4f79",
+          "parameters": {
+            "operation": "getAll",
+            "limit": 10,
+            "simple": false,
+            "filters": {
+              "q": "={{ $('New Gmail Email Received').item.json.From }} -in:inbox -in:sent"
+            },
+            "options": {}
+          },
+          "credentials": {
+            "gmailOAuth2": {
+              "id": "Efx3JS7iiWyrLbJd",
+              "name": "Gmail account"
+            }
+          },
+          "typeVersion": 2.1,
+          "alwaysOutputData": true
+        },
+        {
+          "id": "7762bb26-002d-4b78-ade6-dd167b46bde4",
+          "name": "Code",
+          "type": "n8n-nodes-base.code",
+          "position": [2140, 100],
+          "parameters": {
+            "jsCode": "// Získáme data ze všech předchozích uzlů\nconst items = $input.all();\nconst labelIds = [];\n\nitems.forEach(item => {\n  if (item.json.labelIds && Array.isArray(item.json.labelIds)) {\n    // Filtrujeme pouze labelIds začínající na \"Label_\"\n    const filteredLabels = item.json.labelIds.filter(labelId => \n      labelId.startsWith('Label_')\n    );\n    labelIds.push(...filteredLabels);\n  }\n});\n\n// KLÍČOVÉ: Získáme messageId původního emailu\n// Gmail - search hledá podle $('New Gmail Email Received').item.json.From\n// Takže první výsledek by měl být původní email\nconst originalMessageId = $('New Gmail Email Received').item.json.id;\n\nreturn [{ json: { \n  labelIds: [...new Set(labelIds)],\n  messageId: originalMessageId\n}}];"
+          },
+          "typeVersion": 2,
+          "alwaysOutputData": false
+        },
+        {
+          "id": "ce462c8e-29e9-4194-bedf-6822d2abbc9f",
+          "name": "Map Label Names to IDs1",
+          "type": "n8n-nodes-base.code",
+          "position": [300, 0],
+          "parameters": {
+            "jsCode": "const items = $input.all();\nconst combinedIDtoNAMES = items.reduce((acc, item) => {\n  return { ...acc, [item.json.id]: item.json.name };\n}, {});\n\nreturn { combinedIDtoNAMES };\n"
+          },
+          "typeVersion": 2
+        },
+        {
+          "id": "trigger-comment",
+          "name": "📧 Gmail Trigger",
+          "type": "n8n-nodes-base.stickyNote",
+          "position": [-700, 240],
+          "parameters": {
+            "width": 350,
+            "height": 120,
+            "content": "🎯 **TRIGGER**: Spouští workflow každou minutu při příchodu nového emailu\n\n✅ Kontroluje Gmail účet\n✅ Předává email data do dalších nodů\n⏰ Polling: každou minutu"
+          },
+          "typeVersion": 1
+        },
+        {
+          "id": "aggregate-comment",
+          "name": "📊 Agregace",
+          "type": "n8n-nodes-base.stickyNote",
+          "position": [-420, -140],
+          "parameters": {
+            "width": 320,
+            "height": 100,
+            "content": "📊 **AGREGACE**: Shromažďuje všechny příchozí email zprávy\n\n✅ Kombinuje data z triggeru\n✅ Připravuje je pro další zpracování"
+          },
+          "typeVersion": 1
+        },
+        {
+          "id": "labels-comment",
+          "name": "🏷️ Gmail Labely",
+          "type": "n8n-nodes-base.stickyNote",
+          "position": [-220, -140],
+          "parameters": {
+            "width": 320,
+            "height": 100,
+            "content": "🏷️ **NAČÍTÁNÍ LABELŮ**: Získává seznam všech dostupných Gmail labelů\n\n✅ Komunikuje s Gmail API\n✅ Vrací názvy a ID všech labelů"
+          },
+          "typeVersion": 1
+        },
+        {
+          "id": "mapping1-comment",
+          "name": "🔄 Mapování 1",
+          "type": "n8n-nodes-base.stickyNote",
+          "position": [0, -140],
+          "parameters": {
+            "width": 280,
+            "height": 100,
+            "content": "🔄 **MAPOVÁNÍ 1**: Vytváří slovník název→ID\n\n🔑 Název labelu jako klíč\n💾 ID labelu jako hodnota\n🎯 Pro snadné vyhledání ID"
+          },
+          "typeVersion": 1
+        },
+        {
+          "id": "mapping2-comment",
+          "name": "🔄 Mapování 2",
+          "type": "n8n-nodes-base.stickyNote",
+          "position": [220, -140],
+          "parameters": {
+            "width": 280,
+            "height": 100,
+            "content": "🔄 **MAPOVÁNÍ 2**: Vytváří slovník ID→název\n\n🔑 ID labelu jako klíč\n💾 Název labelu jako hodnota\n↩️ Obrácené mapování"
+          },
+          "typeVersion": 1
+        },
+        {
+          "id": "merge-comment",
+          "name": "🔗 Sloučení",
+          "type": "n8n-nodes-base.stickyNote",
+          "position": [520, -40],
+          "parameters": {
+            "width": 320,
+            "height": 100,
+            "content": "🔗 **SLOUČENÍ**: Kombinuje email data s mapováním labelů\n\n🔀 Slučuje dva datové proudy\n🎯 Připravuje kompletní data pro AI"
+          },
+          "typeVersion": 1
+        },
+        {
+          "id": "ai-model-comment",
+          "name": "🤖 AI Model",
+          "type": "n8n-nodes-base.stickyNote",
+          "position": [820, 420],
+          "parameters": {
+            "width": 300,
+            "height": 100,
+            "content": "🤖 **AI MODEL**: OpenRouter Mistral model\n\n⚡ Poskytuje AI schopnosti\n🧠 Pro klasifikaci emailů\n📝 Model: mistral-small-3.2-24b"
+          },
+          "typeVersion": 1
+        },
+        {
+          "id": "classify-comment",
+          "name": "🧠 AI Klasifikace",
+          "type": "n8n-nodes-base.stickyNote",
+          "position": [800, -40],
+          "parameters": {
+            "width": 350,
+            "height": 140,
+            "content": "🧠 **AI KLASIFIKACE**: Analyzuje email a přiřazuje kategorii\n\n🔍 Používá AI pro porozumění obsahu\n📋 8 kategorií: To respond, FYI, Comment, Notification, Meeting update, Awaiting reply, Actioned, Marketing\n📤 Vrací pouze číslo a název"
+          },
+          "typeVersion": 1
+        },
+        {
+          "id": "apply1-comment",
+          "name": "🏷️ Aplikace 1",
+          "type": "n8n-nodes-base.stickyNote",
+          "position": [1240, -40],
+          "parameters": {
+            "width": 320,
+            "height": 100,
+            "content": "🏷️ **APLIKACE LABELU 1**: Přiřazuje AI klasifikační label\n\n🎯 Bere výsledek AI klasifikace\n🔍 Najde odpovídající label ID\n📧 Aplikuje na původní email"
+          },
+          "typeVersion": 1
+        },
+        {
+          "id": "search-comment",
+          "name": "🔍 Vyhledávání",
+          "type": "n8n-nodes-base.stickyNote",
+          "position": [1580, -40],
+          "parameters": {
+            "width": 320,
+            "height": 100,
+            "content": "🔍 **HLEDÁNÍ EMAILŮ**: Hledá další emaily od stejného odesílatele\n\n🚫 Filtruje mimo inbox a sent\n🔗 Nalezení souvisejících zpráv\n📊 Limit: 10 emailů"
+          },
+          "typeVersion": 1
+        },
+        {
+          "id": "filter-comment",
+          "name": "⚙️ Filtrování",
+          "type": "n8n-nodes-base.stickyNote",
+          "position": [2060, -40],
+          "parameters": {
+            "width": 320,
+            "height": 100,
+            "content": "⚙️ **FILTROVÁNÍ LABELŮ**: Zpracovává labely nalezených emailů\n\n🏷️ Pouze labely 'Label_*'\n🎯 Připravuje pro finální aplikaci\n🗑️ Odstraňuje duplikáty"
+          },
+          "typeVersion": 1
+        },
+        {
+          "id": "apply2-comment",
+          "name": "🏷️ Aplikace 2",
+          "type": "n8n-nodes-base.stickyNote",
+          "position": [2540, -40],
+          "parameters": {
+            "width": 320,
+            "height": 100,
+            "content": "🏷️ **APLIKACE LABELU 2**: Finální aplikace všech labelů\n\n📌 Aplikuje všechny relevantní labely\n🎯 Používá message ID původního emailu\n✅ Završuje proces klasifikace"
+          },
+          "typeVersion": 1
+        },
+        {
+          "id": "workflow-overview",
+          "name": "📋 Přehled Workflow",
+          "type": "n8n-nodes-base.stickyNote",
+          "position": [-800, -100],
+          "parameters": {
+            "width": 400,
+            "height": 180,
+            "content": "📋 **GMAIL TRIGGER V6 - PŘEHLED**\n\n🎯 **Účel**: Automatická AI klasifikace Gmail emailů\n\n🔄 **Tok**:\n1️⃣ Trigger → 2️⃣ Agregace → 3️⃣ Načtení labelů\n4️⃣ Mapování → 5️⃣ Sloučení → 6️⃣ AI klasifikace\n7️⃣ První aplikace → 8️⃣ Hledání → 9️⃣ Filtrování\n🔟 Finální aplikace\n\n⚡ **Status**: Každou minutu, automaticky"
+          },
+          "typeVersion": 1
+        }
+      ],
+      "connections": {
+        "OpenRouter Chat Model": {
+          "ai_languageModel": [
+            [
+              {
+                "node": "Classify Email with AI",
+                "type": "ai_languageModel",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Classify Email with AI": {
+          "main": [
+            [
+              {
+                "node": "Apply Classification Label",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Map Label Names to IDs": {
+          "main": [
+            [
+              {
+                "node": "Map Label Names to IDs1",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Merge Labels & Messages": {
+          "main": [
+            [
+              {
+                "node": "Classify Email with AI",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Aggregate Gmail Messages": {
+          "main": [
+            [
+              {
+                "node": "Fetch Available Gmail Labels",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "New Gmail Email Received": {
+          "main": [
+            [
+              {
+                "node": "Aggregate Gmail Messages",
+                "type": "main",
+                "index": 0
+              },
+              {
+                "node": "Merge Labels & Messages",
+                "type": "main",
+                "index": 1
+              }
+            ]
+          ]
+        },
+        "Fetch Available Gmail Labels": {
+          "main": [
+            [
+              {
+                "node": "Map Label Names to IDs",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Apply Classification Label": {
+          "main": [
+            [
+              {
+                "node": "Gmail - search",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Gmail - search": {
+          "main": [
+            [
+              {
+                "node": "Code",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Code": {
+          "main": [
+            [
+              {
+                "node": "Apply Classification Label1",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Map Label Names to IDs1": {
+          "main": [
+            [
+              {
+                "node": "Merge Labels & Messages",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "settings": {
+        "saveExecutionProgress": true,
+        "saveManualExecutions": true,
+        "saveDataErrorExecution": "all",
+        "saveDataSuccessExecution": "all",
+        "executionTimeout": 3600,
+        "timezone": "UTC"
+      },
+      "staticData": null,
+      "meta": null,
+      "pinData": null,
+      "versionId": "d7d65007-6b93-453c-a017-d0c7155f83a0",
+      "triggerCount": 0
+    }
+  },
+  "installation": {
+    "steps": [
+      "1. Importujte tento JSON soubor do n8n",
+      "2. Nakonfigurujte Gmail OAuth2 credentials",
+      "3. Nakonfigurujte OpenRouter API credentials",
+      "4. Vytvořte Gmail labely podle kategorií (1-8)",
+      "5. Aktivujte workflow",
+      "6. Workflow se spustí automaticky každou minutu"
+    ],
+    "notes": [
+      "Workflow vyžaduje LangChain nody v n8n",
+      "Doporučuje se testování před aktivací",
+      "Může být potřeba upravit klasifikační pravidla podle potřeb"
+    ]
+  }
+}
